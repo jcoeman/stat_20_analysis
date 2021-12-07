@@ -1,0 +1,104 @@
+---
+title: "Project 1: 121 Group 50"
+author: 
+   - Joshua Briscoe, Hannah Kwon, Nam Seok Kim, Abigail Allen, Joselin Hartanto
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+## How to display data badly: write up
+
+How to Display Data Badly by Howard Weiner does an excellent job at crafting methodologies to design data visualizations that both portray data accurately and don’t mislead an audience. The paper outlines in a comedic manner of what not to do when creating data visualizations, like changing scales mid axis or omitting data. As a group, we discussed that the rules around data visualization that Weiner developed are a good general guideline. The reason why we believe these are more “guidelines” than strict rules is that they do not hold true for every single situation. Rule two states that one must “maximize” the data ink ratio. However, maximizing the data-ink ratio to the fullest capacity would ultimately just generate a black canvas. There likely exists a ‘goldilocks’ data-ink ratio which communicates the intricacies of a set of data in an efficient manner without overwhelming those who will be viewing the data. As a group we believe that the rules are a good framework for displaying data, but that each data visualization is independent of the next and as such different rules may apply to different scenarios. In addition, these rules are for static visualizations. Today, data dashboards exist which are constantly updating from data pipelines and are more interactive at the communicative level.
+
+![](donner.png)
+![](baddata.png)
+
+This specific graph breakes rule 6 from Wainer's "How to display data badly." For context, the graph originates from an Argentinian news station. The graph does not accurately portray the differences among testing rates because it switches scales mid y-axis. At a quick glance this gives the impression that Argentina is comparable to the testing rates of other countries displayed like the USA, Italy and Germany. 
+
+![](baddataaccurate.png)
+
+However, in this visualization, we can see a more accurate visualization of the testing rates. Clearly, Argentina is significantly lower in comparison. 
+
+**********
+## Maternal Smoking and Infant Health
+
+```{r load-data}
+#use whatever you have called the file, and the complete path.
+babies <- read.csv("babies.csv",header = TRUE)
+# check that it looks as you expect
+str(babies)
+head(babies)
+```
+
+In this babies data set we explored the differences between the birth weight of babies born to mothers who smoke and those who don't smoke. We exclude the mothers where it is unknown because there are not many, and there is potential overlap between the two groups. Our group found evidence that the mean birth weight is statistically significantly lower of mothers who smoke compared to those who don't smoke. 
+
+```{r}
+#subsetting data for analyses by group.
+no_smok_mom_wt = babies %>% filter(smoke == 0)
+smok_mom_wt = babies %>% filter(smoke == 1)
+```
+
+### Numerical summaries of the data
+
+Here you can put in an r-chunk to compute the summary.
+You also want to print the mean and sd of the data, and comment on what you see.
+
+``` {r numerical-summary}
+babies %>% 
+  group_by(smoke) %>% 
+  filter(smoke != 9) %>% 
+  summarise(mean_bwt = mean(bwt), RMS_bwt = sqrt(1235/1236)*sd(bwt))
+
+
+
+```
+
+Here we can see that the mean birthweight for smokers is less than the mean birthweight for non smokers. The standard deviations for smokers is slightly higher but not to an obvious statistically significant to a degree that we would want to make a claim that the variability between the groups differs. 
+
+```{r}
+quantile(no_smok_mom_wt$bwt)
+quantile(smok_mom_wt$bwt)
+```
+
+We can see that almost every single figure in the 5 number summary for mothers who don't smoke is greater than every figure in the 5 number summary for mothers who do smoke. 
+
+```{r}
+quantile(no_smok_mom_wt$bwt) - quantile(smok_mom_wt$bwt)
+```
+
+Here is the differences between quantiles. The only moment where a smoking birth weight quantile is greater than a nonsmoking birth weight quantile is at the 0% quantile. 
+
+```{r}
+#Labeling Factors
+babies_mod <- babies
+babies_mod$smoke <- recode_factor(babies_mod$smoke, '0' = 'No Smoke', '1' = 'Smoke', '9' = 'Unkown')
+```
+
+### Graphical summaries of the data
+
+put in r-chunks that will create the visual summaries. Comment on what you see.
+``` {r histograms}
+ggplot(filter(babies_mod, smoke != 'Unkown'), aes(x = bwt, fill = smoke, color = smoke)) + geom_histogram(alpha = 0.5, position = "identity") + scale_color_grey() + theme_classic() + geom_vline(xintercept = mean(no_smok_mom_wt$bwt), size = 1.5, color = 'red') + geom_vline(xintercept = mean(smok_mom_wt$bwt), color = 'blue', size = 1.5) + labs(title = 'Histogram of Weights', y = 'Frequency', x= 'Birthweight(oz)')
+```
+
+Looking at the histograms, they both appear relatively normal and symmetric so the mean is a good measure of central tendency. We can identify that the mean weight of babies birthed to mothers who don't smoke (the red line) is higher than the mean weight of babies birthed to mothers who do smoke (the blue line). 
+
+``` {r box-plots}
+ggplot(filter(babies_mod, smoke != 'Unkown'), aes(fill = smoke)) + geom_boxplot(aes(y = bwt, group = smoke)) + theme_classic() + labs(title = 'Boxplot of Birthweights', y = 'Birthweight(oz)') + theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+```
+
+We can identify that the median for mothers who smoke is lower than the median for mothers who don't smoke in this box plot. 
+
+### Discussion and conclusion 
+
+This is a purely observational study so direct causation cannot be established between smoking and birth weight but according to this set of data there is evidence that the birth weight of babies born to smoking mothers is lower in comparison to the birth weight of babies born to non smoking mothers. The reason we cannot establish direct causation (that more smoking = lower birth weight) is because of confounding variables. For example, it is known that nicotine is a known hunger suppressant, which may lead to mothers eating less or not at the same amount as mothers who don't smoke which would in turn make the babies weigh less at a statistically significant level. In this scenario its completely possible for nicotine to have 0 impact on a babies weight, but the correlation would still exist.  
